@@ -1,0 +1,42 @@
+resource "google_service_account" "gke_nodes" {
+  account_id   = "gke-node-sa"
+  display_name = "GKE Node Service Account"
+}
+
+resource "google_project_iam_member" "gke_node_logging" {
+  project = var.project_id # data.google_client_config.current.project
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_node_monitoring" {
+  project = var.project_id # data.google_client_config.current.project
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_node_monitoring_viewer" {
+  project = var.project_id # project = data.google_client_config.current.project
+  role    = "roles/monitoring.viewer"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_node_service_account_role" {
+  project = var.project_id
+  role    = "roles/container.nodeServiceAccount"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_node_storage_viewer" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "repo_reader" {
+  project    = var.project_id
+  location   = var.region_name
+  repository = var.repository_name # google_artifact_registry_repository.docker_repo.name
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
