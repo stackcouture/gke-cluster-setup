@@ -5,7 +5,6 @@ resource "google_container_cluster" "demo_cluster" {
   location = var.location_name
 
   deletion_protection = var.deletion_protection
-  datapath_provider   = "ADVANCED_DATAPATH"
 
   network    = var.compute_network_name
   subnetwork = var.compute_subnetwork_name
@@ -20,6 +19,10 @@ resource "google_container_cluster" "demo_cluster" {
 
   release_channel {
     channel = "REGULAR"
+  }
+
+  network_policy {
+    enabled = true
   }
 
   workload_identity_config {
@@ -61,7 +64,7 @@ resource "google_container_node_pool" "system_pool" {
   cluster  = google_container_cluster.demo_cluster.name
   location = google_container_cluster.demo_cluster.location
 
-  initial_node_count = 1
+  initial_node_count = 2
 
   autoscaling {
     min_node_count = 1
@@ -150,11 +153,11 @@ resource "google_container_node_pool" "app_pool" {
   }
 
   node_config {
-    machine_type = "e2-standard-2"
+    machine_type = "e2-standard-4"
     image_type   = "UBUNTU_CONTAINERD"
 
     disk_type    = "pd-standard"
-    disk_size_gb = 20
+    disk_size_gb = 30
 
     service_account = var.sa_node_email
 
