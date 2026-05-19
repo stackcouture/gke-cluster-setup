@@ -1,11 +1,11 @@
-# data "google_client_config" "current" {}
-
 resource "google_container_cluster" "demo_cluster" {
+
   project  = var.project_id
   name     = "${var.project_id}-gke"
   location = var.location_name
 
   deletion_protection = var.deletion_protection
+  datapath_provider   = "ADVANCED_DATAPATH"
 
   network    = var.compute_network_name
   subnetwork = var.compute_subnetwork_name
@@ -24,10 +24,6 @@ resource "google_container_cluster" "demo_cluster" {
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
-  }
-
-  network_policy {
-    enabled = true
   }
 
   private_cluster_config {
@@ -67,6 +63,22 @@ resource "google_container_node_pool" "system_pool" {
 
   initial_node_count = 1
 
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 3
+  }
+
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
+  }
+
+  lifecycle {
+    ignore_changes = [
+      initial_node_count
+    ]
+  }
+
   management {
     auto_repair  = true
     auto_upgrade = true
@@ -76,7 +88,7 @@ resource "google_container_node_pool" "system_pool" {
     machine_type = "e2-standard-2"
     image_type   = "COS_CONTAINERD"
 
-    disk_type    = "pd-balanced"
+    disk_type    = "pd-standard"
     disk_size_gb = 30
 
     service_account = var.sa_node_email
@@ -86,7 +98,13 @@ resource "google_container_node_pool" "system_pool" {
     ]
 
     labels = {
-      nodepool = "system"
+      env = "dev"
+    }
+
+    taint {
+      key    = "workload"
+      value  = "system"
+      effect = "NO_SCHEDULE"
     }
 
     metadata = {
@@ -98,21 +116,32 @@ resource "google_container_node_pool" "system_pool" {
       enable_integrity_monitoring = true
     }
 
-    tags = ["system-pool"]
+    tags = ["gke-node"]
   }
 }
 
 resource "google_container_node_pool" "app_pool" {
+
   name     = "app-pool"
   cluster  = google_container_cluster.demo_cluster.name
   location = google_container_cluster.demo_cluster.location
 
-  # initial_node_count = 2
   initial_node_count = 1
 
   autoscaling {
-    min_node_count = 2
-    max_node_count = 10
+    min_node_count = 1
+    max_node_count = 3
+  }
+
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
+  }
+
+  lifecycle {
+    ignore_changes = [
+      initial_node_count
+    ]
   }
 
   management {
@@ -120,17 +149,12 @@ resource "google_container_node_pool" "app_pool" {
     auto_upgrade = true
   }
 
-  upgrade_settings {
-    max_surge       = 2
-    max_unavailable = 0
-  }
-
   node_config {
-    machine_type = "e2-standard-4"
+    machine_type = "e2-standard-2"
     image_type   = "UBUNTU_CONTAINERD"
 
-    disk_type    = "pd-balanced"
-    disk_size_gb = 30
+    disk_type    = "pd-standard"
+    disk_size_gb = 20
 
     service_account = var.sa_node_email
 
@@ -147,12 +171,6 @@ resource "google_container_node_pool" "app_pool" {
       env      = "dev"
     }
 
-    # taint {
-    #   key    = "workload"
-    #   value  = "applications"
-    #   effect = "NO_SCHEDULE"
-    # }
-
     shielded_instance_config {
       enable_secure_boot          = true
       enable_integrity_monitoring = true
@@ -161,158 +179,3 @@ resource "google_container_node_pool" "app_pool" {
     tags = ["general-app-pool"]
   }
 }
-
-# resource "google_container_node_pool" "database_pool" {
-#   name     = "database-pool"
-#   cluster  = google_container_cluster.demo_cluster.name
-#   location = google_container_cluster.demo_cluster.location
-
-#   # initial_node_count = 2
-#   initial_node_count = 2
-
-#   autoscaling {
-#     min_node_count = 2
-#     max_node_count = 5
-#   }
-
-#   management {
-#     auto_repair  = true
-#     auto_upgrade = true
-#   }
-
-#   node_config {
-#     machine_type = "e2-standard-4"
-#     image_type   = "COS_CONTAINERD"
-
-#     disk_type    = "pd-ssd"
-#     disk_size_gb = 50
-
-#     service_account = var.sa_node_email
-
-#     metadata = {
-#       disable-legacy-endpoints = "true"
-#     }
-
-#     labels = {
-#       workload = "database"
-#       env      = "dev"
-#     }
-
-#     taint {
-#       key    = "workload"
-#       value  = "database"
-#       effect = "NO_SCHEDULE"
-#     }
-
-#     shielded_instance_config {
-#       enable_secure_boot          = true
-#       enable_integrity_monitoring = true
-#     }
-
-#     tags = ["general-database-pool"]
-#   }
-# }
-
-# resource "google_container_node_pool" "general_pool" {
-#   name     = "general-pool"
-#   project  = google_container_cluster.demo_cluster.project
-#   cluster  = google_container_cluster.demo_cluster.name
-#   location = google_container_cluster.demo_cluster.location
-
-#   initial_node_count = 1
-
-#   autoscaling {
-#     min_node_count = 1
-#     max_node_count = 3
-#   }
-
-#   management {
-#     auto_repair  = true
-#     auto_upgrade = true
-#   }
-
-#   node_config {
-#     image_type   = "UBUNTU_CONTAINERD"
-#     machine_type = "e2-standard-4"
-
-#     disk_type    = "pd-balanced"
-#     disk_size_gb = 30
-
-#     service_account = var.sa_node_email
-
-#     oauth_scopes = [
-#       "https://www.googleapis.com/auth/cloud-platform"
-#     ]
-
-#     # oauth_scopes = [
-#     #   "https://www.googleapis.com/auth/logging.write",
-#     #   "https://www.googleapis.com/auth/monitoring",
-#     #   "https://www.googleapis.com/auth/devstorage.read_only",
-#     #   "https://www.googleapis.com/auth/cloud-platform.read-only"
-#     # ]
-
-#     metadata = {
-#       disable-legacy-endpoints = "true"
-#     }
-
-#     labels = {
-#       nodepool = "general"
-#       env      = "dev"
-#     }
-
-#     shielded_instance_config {
-#       enable_secure_boot          = true
-#       enable_integrity_monitoring = true
-#     }
-
-#     tags = ["general-node-pool"]
-#   }
-# }
-
-# resource "google_container_node_pool" "stateful_pool" {
-#   name     = "stateful-pool"
-#   project  = google_container_cluster.demo_cluster.project
-#   cluster  = google_container_cluster.demo_cluster.name
-#   location = google_container_cluster.demo_cluster.location
-
-#   node_count = 1
-
-#   autoscaling {
-#     min_node_count = 1
-#     max_node_count = 2
-#   }
-
-#   management {
-#     auto_repair  = true
-#     auto_upgrade = true
-#   }
-
-#   node_config {
-#     image_type   = "UBUNTU_CONTAINERD"
-#     machine_type = "e2-standard-4"
-
-#     disk_type    = "pd-ssd"
-#     disk_size_gb = 100
-
-#     oauth_scopes = [
-#       "https://www.googleapis.com/auth/cloud-platform"
-#     ]
-
-#     metadata = {
-#       disable-legacy-endpoints = "true"
-#     }
-
-#     labels = {
-#       workload = "stateful"
-#       env      = "dev"
-#     }
-
-#     taint {
-#       key    = "workload"
-#       value  = "stateful"
-#       effect = "NO_SCHEDULE"
-#     }
-
-#     tags = ["stateful-node-pool"]
-#   }
-# }
