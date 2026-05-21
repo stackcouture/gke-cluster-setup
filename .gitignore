@@ -2,3 +2,4 @@
 tfplan 
 terraform*.*
 errored.tfstate
+dev.tfvars
