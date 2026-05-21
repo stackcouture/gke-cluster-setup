@@ -12,6 +12,12 @@ resource "google_container_cluster" "demo_cluster" {
   initial_node_count       = var.initial_node_count       # 2
   remove_default_node_pool = var.remove_default_node_pool # true
 
+  networking_mode = "VPC_NATIVE"
+
+  gateway_api_config {
+    channel = "CHANNEL_STANDARD"
+  }
+
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods-range"
     services_secondary_range_name = "services-range"
