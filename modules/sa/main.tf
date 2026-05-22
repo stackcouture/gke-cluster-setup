@@ -58,3 +58,22 @@ resource "google_service_account_iam_member" "workload_identity" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[external-secrets/external-secrets]"
 }
+
+# Service Account for Loki
+resource "google_service_account" "loki_gsa" {
+  account_id   = "loki-gsa"
+  display_name = "Loki GSA"
+}
+
+resource "google_project_iam_member" "gke_loki_storage_viewer" {
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.loki_gsa.email}"
+}
+
+resource "google_service_account_iam_member" "loki_workload_identity" {
+  service_account_id = google_service_account.loki_gsa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[observability/loki]"
+}
+
