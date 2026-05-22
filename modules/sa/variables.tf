@@ -3,10 +3,10 @@ variable "project_id" {
   description = "Project Id"
 }
 
-variable "repository_name" {
-  type        = string
-  description = "Repository name"
-}
+# variable "repository_name" {
+#   type        = string
+#   description = "Repository name"
+# }
 
 variable "region_name" {
   type        = string

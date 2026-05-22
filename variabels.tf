@@ -105,19 +105,3 @@ variable "location_name" {
   type        = string
   description = "Location Name"
 }
-
-# Artifact 
-variable "repository_name" {
-  type        = string
-  description = "Repository name"
-}
-
-variable "repository_description" {
-  type        = string
-  description = "Repository description"
-}
-
-variable "repository_format" {
-  type        = string
-  description = "Repository format"
-}

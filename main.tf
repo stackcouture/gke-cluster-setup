@@ -25,29 +25,19 @@ module "firewall" {
 }
 
 module "sa" {
-  source          = "./modules/sa"
-  project_id      = data.google_client_config.current.project
-  repository_name = module.artifact.repository_name
-  region_name     = var.region_name
+  source      = "./modules/sa"
+  project_id  = data.google_client_config.current.project
+  region_name = var.region_name
 }
 
 module "gke" {
   source                   = "./modules/gke"
-  compute_network_name     = module.vpc.vpc_name        # var.compute_network_name
-  compute_subnetwork_name  = module.subnets.subnet_name # var.compute_subnetwork_name
-  sa_node_email            = module.sa.sa_email         # google_service_account.gke_nodes.email
+  compute_network_name     = module.vpc.vpc_name
+  compute_subnetwork_name  = module.subnets.subnet_name
+  sa_node_email            = module.sa.sa_email
   initial_node_count       = var.initial_node_count
   deletion_protection      = var.deletion_protection
   remove_default_node_pool = var.remove_default_node_pool
   location_name            = var.location_name
   project_id               = data.google_client_config.current.project
-}
-
-module "artifact" {
-  source                 = "./modules/artifact"
-  project_id             = data.google_client_config.current.project
-  region_name            = var.region_name
-  repository_name        = var.repository_name
-  repository_description = var.repository_description
-  repository_format      = var.repository_format
 }
